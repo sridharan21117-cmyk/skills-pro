@@ -1,0 +1,6 @@
+{
+  "name": "Skill Forge AI",
+  "description": "Full-Stack Learning & Career Development Platform with Programming Practice, Aptitude Bank, Courseware, Certifications & Offline/Online AI Mentorship",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
