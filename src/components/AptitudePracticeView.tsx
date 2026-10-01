@@ -382,47 +382,72 @@ export const AptitudePracticeView: React.FC<AptitudePracticeViewProps> = ({ onAt
           </div>
 
           {/* Test Cards List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {tests.map(test => (
-              <div
-                key={test.id}
-                className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4 hover:border-white/20 transition-all backdrop-blur-md shadow-xl"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 backdrop-blur-md">
-                      {test.companyPattern || test.category}
-                    </span>
-                    <h3 className="text-base font-bold text-white mt-1.5">{test.title}</h3>
-                    <p className="text-xs text-slate-300 mt-1">{test.description}</p>
-                  </div>
-                </div>
+          {(() => {
+            const filteredTests = tests.filter(test =>
+              selectedCategory === 'All' ||
+              test.category === selectedCategory ||
+              test.companyPattern === selectedCategory
+            );
 
-                <div className="grid grid-cols-3 gap-2 p-3 bg-white/5 rounded-2xl border border-white/10 text-center text-xs backdrop-blur-md">
-                  <div>
-                    <span className="text-[10px] text-slate-400">Duration</span>
-                    <p className="font-bold text-white">{test.durationMinutes} mins</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400">Questions</span>
-                    <p className="font-bold text-white">{test.totalQuestions}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400">Pass Cutoff</span>
-                    <p className="font-bold text-indigo-300">{test.passPercentage}%</p>
-                  </div>
+            if (filteredTests.length === 0) {
+              return (
+                <div className="p-12 bg-white/5 border border-white/10 rounded-3xl text-center space-y-3 backdrop-blur-md">
+                  <Brain className="w-8 h-8 text-slate-500 mx-auto" />
+                  <p className="text-sm font-semibold text-slate-300">No test modules found in category "{selectedCategory}"</p>
+                  <button
+                    onClick={() => setSelectedCategory('All')}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition"
+                  >
+                    View All Categories
+                  </button>
                 </div>
+              );
+            }
 
-                <button
-                  onClick={() => handleStartTest(test)}
-                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border border-white/20 text-white font-bold text-xs rounded-2xl transition shadow-lg backdrop-blur-md flex items-center justify-center space-x-2"
-                >
-                  <span>Start Test Attempt</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredTests.map(test => (
+                  <div
+                    key={test.id}
+                    className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4 hover:border-white/20 transition-all backdrop-blur-md shadow-xl"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 backdrop-blur-md">
+                          {test.companyPattern || test.category}
+                        </span>
+                        <h3 className="text-base font-bold text-white mt-1.5">{test.title}</h3>
+                        <p className="text-xs text-slate-300 mt-1">{test.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 p-3 bg-white/5 rounded-2xl border border-white/10 text-center text-xs backdrop-blur-md">
+                      <div>
+                        <span className="text-[10px] text-slate-400">Duration</span>
+                        <p className="font-bold text-white">{test.durationMinutes} mins</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400">Questions</span>
+                        <p className="font-bold text-white">{test.totalQuestions}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400">Pass Cutoff</span>
+                        <p className="font-bold text-indigo-300">{test.passPercentage}%</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleStartTest(test)}
+                      className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border border-white/20 text-white font-bold text-xs rounded-2xl transition shadow-lg backdrop-blur-md flex items-center justify-center space-x-2"
+                    >
+                      <span>Start Test Attempt</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
       )}
 

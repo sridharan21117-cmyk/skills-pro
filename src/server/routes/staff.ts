@@ -262,3 +262,8 @@ staffRouter.get('/activity', (req: AuthRequest, res: Response) => {
     activityFeed: activityFeed.slice(0, 15)
   });
 });
+
+// 7. Staff Certificates Report
+staffRouter.get('/certificates', (req: AuthRequest, res: Response) => {
+  res.json(db.get('certificates'));
+});

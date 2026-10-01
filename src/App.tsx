@@ -165,6 +165,14 @@ export function App() {
     }
   };
 
+  const handleNavigateTab = (tab: string) => {
+    if (tab === 'practice') {
+      setActiveTab('aptitude');
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
   const handleLogout = async () => {
     await authService.logout();
     setUser(null);
@@ -239,7 +247,7 @@ export function App() {
           <StudentDashboard
             user={user}
             onLogout={handleLogout}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
@@ -247,21 +255,21 @@ export function App() {
           <CoursesView
             user={user}
             onRefreshCourses={loadGlobalData}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
         {user && activeTab === 'aptitude' && (
           <AptitudePracticeView
             onAttemptCompleted={loadGlobalData}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
         {user && activeTab === 'compiler' && (
           <ProgrammingCompilerView
             isOffline={isOfflineAI}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
@@ -269,32 +277,32 @@ export function App() {
           <SkillAnalyzerView
             user={user}
             setActiveTab={setActiveTab}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
         {user && activeTab === 'interview' && (
           <InterviewSimulatorView
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
         {user && activeTab === 'jobs' && (
           <JobSimulatorView
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
         {user && activeTab === 'certificates' && (
           <CertificatesView
             certificates={certificates}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
         {user && activeTab === 'notes' && (
           <NotesView
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
@@ -302,7 +310,7 @@ export function App() {
           <ProfileView
             user={user}
             onUpdateUser={setUser}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
           />
         )}
 
@@ -310,7 +318,8 @@ export function App() {
           <StaffDashboard
             user={user}
             onLogout={handleLogout}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
+            initialSection="overview"
           />
         )}
 
@@ -318,7 +327,8 @@ export function App() {
           <StaffDashboard
             user={user}
             onLogout={handleLogout}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
+            initialSection="questions"
           />
         )}
 
@@ -326,7 +336,8 @@ export function App() {
           <AdminDashboard
             user={user}
             onLogout={handleLogout}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
+            initialSection="overview"
           />
         )}
       </main>

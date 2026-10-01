@@ -210,7 +210,8 @@ export const staffDashboardService = {
   getStudents: () => apiFetch<any[]>('/api/staff/students'),
   getCourses: (department?: string) => apiFetch<any[]>(`/api/staff/courses${department ? `?department=${encodeURIComponent(department)}` : ''}`),
   getAssessments: () => apiFetch<any[]>('/api/staff/assessments'),
-  getActivity: () => apiFetch<{ activeLearnersCount: number; activityFeed: any[] }>('/api/staff/activity')
+  getActivity: () => apiFetch<{ activeLearnersCount: number; activityFeed: any[] }>('/api/staff/activity'),
+  getCertificates: () => apiFetch<Certificate[]>('/api/staff/certificates')
 };
 
 export const adminDashboardService = {
@@ -290,6 +291,8 @@ export const adminDashboardService = {
     method: 'POST',
     body: JSON.stringify(announcement)
   }),
+  getCertificates: () => apiFetch<Certificate[]>('/api/admin/certificates'),
+  getAuditLogs: () => apiFetch<AuditLog[]>('/api/admin/audit-logs'),
   getReports: () => apiFetch<{
     usersReport: any[];
     coursesReport: any[];

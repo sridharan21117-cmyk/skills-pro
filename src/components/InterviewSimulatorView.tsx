@@ -51,7 +51,8 @@ export const InterviewSimulatorView: React.FC<InterviewSimulatorViewProps> = ({ 
   const handleNextQuestion = async () => {
     if (!currentAnswer.trim()) return;
 
-    setAnswers(prev => ({ ...prev, [currentIdx]: currentAnswer }));
+    const updatedAnswers = { ...answers, [currentIdx]: currentAnswer };
+    setAnswers(updatedAnswers);
 
     if (currentIdx < questions.length - 1) {
       setCurrentIdx(prev => prev + 1);
@@ -60,7 +61,7 @@ export const InterviewSimulatorView: React.FC<InterviewSimulatorViewProps> = ({ 
       // Final question submitted - Generate Feedback Report
       setLoading(true);
       try {
-        const prompt = `Evaluate the following technical mock interview for the role "${role}" (${difficulty} level):\nAnswers: ${JSON.stringify(answers)}\nProvide a score out of 100, strengths, weaknesses, and overall feedback.`;
+        const prompt = `Evaluate the following technical mock interview for the role "${role}" (${difficulty} level):\nAnswers: ${JSON.stringify(updatedAnswers)}\nProvide a score out of 100, strengths, weaknesses, and overall feedback.`;
         const res = await aiService.chat(prompt);
 
         setFeedbackReport({

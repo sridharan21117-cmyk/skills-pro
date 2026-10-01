@@ -110,7 +110,17 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       <DashboardSidebar
         role="STUDENT"
         activeSection={activeSection}
-        onSelectSection={setActiveSection}
+        onSelectSection={(sec) => {
+          if (sec === 'practice') {
+            onNavigateTab ? onNavigateTab('aptitude') : setActiveSection('practice');
+          } else if (sec === 'interview') {
+            onNavigateTab ? onNavigateTab('interview') : setActiveSection('interview');
+          } else if (sec === 'jobs') {
+            onNavigateTab ? onNavigateTab('jobs') : setActiveSection('jobs');
+          } else {
+            setActiveSection(sec);
+          }
+        }}
         onLogout={onLogout}
         mobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
@@ -654,13 +664,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               {/* Fallback Section Router to Main App Tabs */}
               {['practice', 'interview', 'jobs'].includes(activeSection) && (
                 <div className="p-8 bg-white/5 border border-white/10 rounded-3xl text-center space-y-3 backdrop-blur-md">
-                  <h3 className="text-base font-bold text-white uppercase">{activeSection} Module Active</h3>
-                  <p className="text-xs text-slate-300">Redirecting to full interactive workspace view...</p>
+                  <h3 className="text-base font-bold text-white uppercase">{activeSection === 'practice' ? 'Aptitude Practice' : activeSection} Module Active</h3>
+                  <p className="text-xs text-slate-300">Open interactive workspace view for {activeSection === 'practice' ? 'Aptitude Practice Hub' : activeSection}.</p>
                   <button
-                    onClick={() => onNavigateTab && onNavigateTab(activeSection)}
+                    onClick={() => onNavigateTab && onNavigateTab(activeSection === 'practice' ? 'aptitude' : activeSection)}
                     className="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 text-white text-xs font-bold rounded-xl shadow-xl"
                   >
-                    Launch Full {activeSection.toUpperCase()} Workspace
+                    Launch Full {activeSection === 'practice' ? 'APTITUDE' : activeSection.toUpperCase()} Workspace
                   </button>
                 </div>
               )}

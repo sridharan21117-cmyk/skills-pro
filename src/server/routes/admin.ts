@@ -390,3 +390,8 @@ adminRouter.get('/reports', (req: AuthRequest, res: Response) => {
     applicationsReport: apps.map(ap => ({ id: ap.id, studentId: ap.userId, jobTitle: ap.jobTitle, company: ap.company, status: ap.status, date: ap.appliedAt }))
   });
 });
+
+// 11. Security Audit Logs
+adminRouter.get('/audit-logs', (req: AuthRequest, res: Response) => {
+  res.json(db.get('auditLogs'));
+});

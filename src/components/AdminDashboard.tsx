@@ -7,7 +7,7 @@ import {
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSidebar } from './DashboardSidebar';
 import { adminDashboardService, aptitudeService } from '../services/api';
-import { User, Course, AptitudeTest, Question, Job, VideoItem } from '../types';
+import { User, Course, AptitudeTest, Question, Job, VideoItem, AuditLog } from '../types';
 import { BackButton } from './BackButton';
 import { Breadcrumbs } from './Breadcrumbs';
 
@@ -15,14 +15,16 @@ interface AdminDashboardProps {
   user: Partial<User>;
   onLogout: () => void;
   onNavigateTab?: (tab: string, extraData?: any) => void;
+  initialSection?: string;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   user,
   onLogout,
-  onNavigateTab
+  onNavigateTab,
+  initialSection = 'overview'
 }) => {
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState(initialSection);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +56,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [jobs, setJobs] = useState<Job[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   // Search & Filter
   const [userSearch, setUserSearch] = useState('');
@@ -73,6 +76,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [showAddJobModal, setShowAddJobModal] = useState(false);
   const [newJobTitle, setNewJobTitle] = useState('');
   const [newJobCompany, setNewJobCompany] = useState('');
+  const [newJobLocation, setNewJobLocation] = useState('Remote / Hybrid');
+  const [newJobSalary, setNewJobSalary] = useState('$100,000 - $120,000');
+
+  const [showAddAssessmentModal, setShowAddAssessmentModal] = useState(false);
+  const [newTestTitle, setNewTestTitle] = useState('');
+  const [newTestCategory, setNewTestCategory] = useState('Quantitative Aptitude');
+  const [newTestDuration, setNewTestDuration] = useState('30');
+  const [newTestPassCutoff, setNewTestPassCutoff] = useState('60');
+
+  const [showAddVideoModal, setShowAddVideoModal] = useState(false);
+  const [newVideoTitle, setNewVideoTitle] = useState('');
+  const [newVideoUrl, setNewVideoUrl] = useState('');
+  const [newVideoCategory, setNewVideoCategory] = useState('Lecture');
+  const [newVideoDept, setNewVideoDept] = useState('Computer Science & Engineering');
 
   useEffect(() => {
     loadAdminData();
@@ -82,7 +99,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const [statsRes, analyticsRes, uList, cList, aList, jList, vList, qList] = await Promise.all([
+      const [statsRes, analyticsRes, uList, cList, aList, jList, vList, qList, auditRes] = await Promise.all([
         adminDashboardService.getDashboard(),
         adminDashboardService.getAnalytics(),
         adminDashboardService.getUsers(),
@@ -90,7 +107,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         adminDashboardService.getAssessments(),
         adminDashboardService.getJobs(),
         adminDashboardService.getVideos(),
-        aptitudeService.getQuestions()
+        aptitudeService.getQuestions(),
+        adminDashboardService.getAuditLogs().catch(() => [])
       ]);
       setOverviewStats(statsRes);
       setAnalytics(analyticsRes);
@@ -100,6 +118,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setJobs(jList);
       setVideos(vList);
       setQuestions(qList);
+      setAuditLogs(auditRes);
     } catch (err) {
       console.error('Failed to load admin data:', err);
       setError('Unable to load Administrator Console data.');
@@ -157,7 +176,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       const created = await adminDashboardService.createJob({
         title: newJobTitle,
-        company: newJobCompany
+        company: newJobCompany || 'Enterprise Partner',
+        location: newJobLocation,
+        salary: newJobSalary,
+        type: 'Full-time'
       });
       setJobs(prev => [created, ...prev]);
       setNewJobTitle('');
@@ -174,6 +196,62 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setJobs(prev => prev.filter(j => j.id !== id));
     } catch (e) {
       console.error('Failed to delete job', e);
+    }
+  };
+
+  const handleCreateAssessment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTestTitle.trim()) return;
+    try {
+      const created = await adminDashboardService.createAssessment({
+        title: newTestTitle,
+        category: newTestCategory,
+        durationMinutes: Number(newTestDuration) || 30,
+        passPercentage: Number(newTestPassCutoff) || 60,
+        status: 'Published'
+      });
+      setAssessments(prev => [created, ...prev]);
+      setNewTestTitle('');
+      setShowAddAssessmentModal(false);
+    } catch (e) {
+      console.error('Failed to create assessment', e);
+    }
+  };
+
+  const handleDeleteAssessment = async (id: string) => {
+    try {
+      await adminDashboardService.deleteAssessment(id);
+      setAssessments(prev => prev.filter(a => a.id !== id));
+    } catch (e) {
+      console.error('Failed to delete assessment', e);
+    }
+  };
+
+  const handleCreateVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVideoTitle.trim() || !newVideoUrl.trim()) return;
+    try {
+      const created = await adminDashboardService.createVideo({
+        title: newVideoTitle,
+        youtubeUrl: newVideoUrl,
+        category: newVideoCategory,
+        department: newVideoDept
+      });
+      setVideos(prev => [created, ...prev]);
+      setNewVideoTitle('');
+      setNewVideoUrl('');
+      setShowAddVideoModal(false);
+    } catch (e) {
+      console.error('Failed to create video', e);
+    }
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    try {
+      await adminDashboardService.deleteVideo(id);
+      setVideos(prev => prev.filter(v => v.id !== id));
+    } catch (e) {
+      console.error('Failed to delete video', e);
     }
   };
 
@@ -563,6 +641,228 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               )}
 
+              {/* SECTION 5: ASSESSMENTS MANAGEMENT */}
+              {activeSection === 'assessments' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-white/5 border border-white/10 p-5 rounded-3xl backdrop-blur-md">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Assessment Management ({assessments.length})</h2>
+                      <p className="text-xs text-slate-300">Create, edit pass cutoffs, and monitor official practice assessments.</p>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAddAssessmentModal(true)}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1 shadow-lg"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>New Assessment</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {assessments.map(test => (
+                      <div key={test.id} className="bg-white/5 border border-white/10 rounded-3xl p-5 space-y-3 backdrop-blur-md shadow-xl">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-bold">
+                              {test.category} • {test.companyPattern || 'Standard'}
+                            </span>
+                            <h3 className="text-sm font-bold text-white mt-1.5">{test.title}</h3>
+                          </div>
+                          <button onClick={() => handleDeleteAssessment(test.id)} className="p-1 text-slate-400 hover:text-rose-400">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 py-2 bg-white/5 border border-white/10 rounded-2xl p-2.5 text-center text-xs">
+                          <div>
+                            <div className="text-[10px] text-slate-400">Duration</div>
+                            <div className="text-xs font-bold text-white">{test.durationMinutes}m</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-400">Questions</div>
+                            <div className="text-xs font-bold text-cyan-300">{test.totalQuestions || 5}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-400">Cutoff %</div>
+                            <div className="text-xs font-bold text-amber-300">{test.passPercentage}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION 6: JOB BOARD DIRECTORY */}
+              {activeSection === 'jobs' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-white/5 border border-white/10 p-5 rounded-3xl backdrop-blur-md">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Placement Job Board Directory ({jobs.length})</h2>
+                      <p className="text-xs text-slate-300">Publish active hiring openings, campus recruitment drives, and requirements.</p>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAddJobModal(true)}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1 shadow-lg"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Post Job Opening</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {jobs.map(job => (
+                      <div key={job.id} className="bg-white/5 border border-white/10 rounded-3xl p-5 space-y-3 backdrop-blur-md shadow-xl">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                              {job.type} • {job.status}
+                            </span>
+                            <h3 className="text-sm font-bold text-white mt-1.5">{job.title}</h3>
+                            <p className="text-xs text-slate-300">{job.company} • {job.location}</p>
+                          </div>
+                          <button onClick={() => handleDeleteJob(job.id)} className="p-1 text-slate-400 hover:text-rose-400">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-white/10 text-slate-400">
+                          <span>Compensation: <strong className="text-white">{job.salary}</strong></span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION 7: VIDEO CONTENT MANAGER */}
+              {activeSection === 'videos' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-white/5 border border-white/10 p-5 rounded-3xl backdrop-blur-md">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Video Content & Masterclass Manager ({videos.length})</h2>
+                      <p className="text-xs text-slate-300">Upload YouTube lecture modules, tech talk recordings, and tutorial links.</p>
+                    </div>
+
+                    <button
+                      onClick={() => setShowAddVideoModal(true)}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1 shadow-lg"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Video Resource</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {videos.map(v => (
+                      <div key={v.id} className="bg-white/5 border border-white/10 rounded-3xl p-5 space-y-3 backdrop-blur-md shadow-xl">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-bold">
+                              {v.category} • {v.department}
+                            </span>
+                            <h3 className="text-sm font-bold text-white mt-1.5">{v.title}</h3>
+                            <p className="text-xs text-slate-400 font-mono truncate max-w-xs">{v.youtubeUrl}</p>
+                          </div>
+                          <button onClick={() => handleDeleteVideo(v.id)} className="p-1 text-slate-400 hover:text-rose-400">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION 8: SYSTEM REPORTS & EXPORT */}
+              {activeSection === 'reports' && (
+                <div className="space-y-6">
+                  <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-base font-bold text-white">Platform System Reports & Archival</h2>
+                      <p className="text-xs text-slate-300">Generate comprehensive institutional reports on learner enrollments, test performance, and placement outcomes.</p>
+                    </div>
+                    <button
+                      onClick={handleExportCSVReport}
+                      className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl text-xs font-bold flex items-center space-x-2 shadow-lg hover:brightness-110"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download JSON Full Report</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-2xl text-center">
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">User Accounts</div>
+                      <div className="text-xl font-bold text-white mt-1">{users.length}</div>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-2xl text-center">
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">Courses</div>
+                      <div className="text-xl font-bold text-cyan-300 mt-1">{courses.length}</div>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-2xl text-center">
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">Assessments</div>
+                      <div className="text-xl font-bold text-purple-300 mt-1">{assessments.length}</div>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-2xl text-center">
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">Job Postings</div>
+                      <div className="text-xl font-bold text-emerald-300 mt-1">{jobs.length}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION 9: SECURITY & AUDIT LOGS */}
+              {activeSection === 'audit' && (
+                <div className="space-y-4">
+                  <div className="bg-white/5 border border-white/10 p-5 rounded-3xl backdrop-blur-md">
+                    <h2 className="text-base font-bold text-white">Security & Administrative Audit Logs ({auditLogs.length})</h2>
+                    <p className="text-xs text-slate-300">Tamper-evident logs of administrative actions, permission updates, and login security events.</p>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs text-slate-300">
+                        <thead className="bg-slate-900/80 border-b border-white/10 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          <tr>
+                            <th className="p-4">Timestamp</th>
+                            <th className="p-4">User</th>
+                            <th className="p-4">Role</th>
+                            <th className="p-4">Action</th>
+                            <th className="p-4">Module</th>
+                            <th className="p-4">Target ID</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {auditLogs.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="p-6 text-center text-slate-400 text-xs">
+                                No security logs recorded yet.
+                              </td>
+                            </tr>
+                          ) : (
+                            auditLogs.map(log => (
+                              <tr key={log.id} className="hover:bg-white/5 transition">
+                                <td className="p-4 font-mono text-[11px] text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
+                                <td className="p-4 font-bold text-white">{log.userName}</td>
+                                <td className="p-4">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                    {log.role}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-slate-200">{log.action}</td>
+                                <td className="p-4 text-slate-400">{log.module}</td>
+                                <td className="p-4 font-mono text-[10px] text-slate-500">{log.target || 'N/A'}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </>
           )}
 
@@ -577,6 +877,80 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div className="flex justify-end space-x-2">
                     <button type="button" onClick={() => setShowAddCourseModal(false)} className="px-4 py-2 bg-white/10 text-xs text-slate-300 rounded-xl">Cancel</button>
                     <button type="submit" className="px-5 py-2 bg-amber-500 text-xs font-bold text-white rounded-xl">Create Course</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Add Assessment Modal */}
+          {showAddAssessmentModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-white/15 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                <h3 className="text-base font-bold text-white">Create New Assessment Module</h3>
+                <form onSubmit={handleCreateAssessment} className="space-y-3">
+                  <input type="text" value={newTestTitle} onChange={e => setNewTestTitle(e.target.value)} placeholder="Assessment Title..." className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" required />
+                  <select value={newTestCategory} onChange={e => setNewTestCategory(e.target.value)} className="w-full px-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white">
+                    <option value="Quantitative Aptitude">Quantitative Aptitude</option>
+                    <option value="Logical Reasoning">Logical Reasoning</option>
+                    <option value="Verbal Ability">Verbal Ability</option>
+                    <option value="Placement Practice">Placement Practice</option>
+                  </select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-slate-400">Duration (Minutes)</label>
+                      <input type="number" value={newTestDuration} onChange={e => setNewTestDuration(e.target.value)} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400">Pass Cutoff (%)</label>
+                      <input type="number" value={newTestPassCutoff} onChange={e => setNewTestPassCutoff(e.target.value)} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" />
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button type="button" onClick={() => setShowAddAssessmentModal(false)} className="px-4 py-2 bg-white/10 text-xs text-slate-300 rounded-xl">Cancel</button>
+                    <button type="submit" className="px-5 py-2 bg-amber-500 text-xs font-bold text-white rounded-xl">Save Assessment</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Add Job Modal */}
+          {showAddJobModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-white/15 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                <h3 className="text-base font-bold text-white">Post New Job Opening</h3>
+                <form onSubmit={handleCreateJob} className="space-y-3">
+                  <input type="text" value={newJobTitle} onChange={e => setNewJobTitle(e.target.value)} placeholder="Job Role Title..." className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" required />
+                  <input type="text" value={newJobCompany} onChange={e => setNewJobCompany(e.target.value)} placeholder="Company Name..." className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" required />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" value={newJobLocation} onChange={e => setNewJobLocation(e.target.value)} placeholder="Location" className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" />
+                    <input type="text" value={newJobSalary} onChange={e => setNewJobSalary(e.target.value)} placeholder="Salary" className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" />
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button type="button" onClick={() => setShowAddJobModal(false)} className="px-4 py-2 bg-white/10 text-xs text-slate-300 rounded-xl">Cancel</button>
+                    <button type="submit" className="px-5 py-2 bg-amber-500 text-xs font-bold text-white rounded-xl">Post Job</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Add Video Modal */}
+          {showAddVideoModal && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-white/15 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                <h3 className="text-base font-bold text-white">Add Video Learning Resource</h3>
+                <form onSubmit={handleCreateVideo} className="space-y-3">
+                  <input type="text" value={newVideoTitle} onChange={e => setNewVideoTitle(e.target.value)} placeholder="Video Title..." className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" required />
+                  <input type="url" value={newVideoUrl} onChange={e => setNewVideoUrl(e.target.value)} placeholder="YouTube Embed URL (e.g. https://www.youtube.com/embed/...)" className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" required />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" value={newVideoCategory} onChange={e => setNewVideoCategory(e.target.value)} placeholder="Category" className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" />
+                    <input type="text" value={newVideoDept} onChange={e => setNewVideoDept(e.target.value)} placeholder="Department" className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white" />
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <button type="button" onClick={() => setShowAddVideoModal(false)} className="px-4 py-2 bg-white/10 text-xs text-slate-300 rounded-xl">Cancel</button>
+                    <button type="submit" className="px-5 py-2 bg-amber-500 text-xs font-bold text-white rounded-xl">Save Video</button>
                   </div>
                 </form>
               </div>
